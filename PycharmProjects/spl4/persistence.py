@@ -1,7 +1,6 @@
 import sqlite3
 import atexit
 from dbtools import Dao
-from dbtools import orm
 
 
 # Data Transfer Objects:
@@ -22,25 +21,25 @@ class Supplier(object):
 
 
 class Product(object):
-    def __init__(self, id, desc, price, quan):
+    def __init__(self, id, description, price, quantity):
         self.id = id
-        self.description = desc
+        self.description = description
         self.price = price
-        self.quantity = quan
+        self.quantity = quantity
 
 
 class Branche(object):
-    def __init__(self, id, loc, num_of_emp):
+    def __init__(self, id, location, number_of_employees):
         self.id = id
-        self.location = loc
-        self.number_of_employees = num_of_emp
+        self.location = location
+        self.number_of_employees = number_of_employees
 
 
 class Activitie(object):
-    def __init__(self, prod_id, quan, act_id, date):
-        self.product_id = prod_id
-        self.quantity = quan
-        self.activator_id = act_id
+    def __init__(self, product_id, quantity, activator_id, date):
+        self.product_id = product_id
+        self.quantity = quantity
+        self.activator_id = activator_id
         self.date = date
 
 
@@ -104,13 +103,46 @@ class Repository(object):
             case "suppliers":
                 self._suppliers_dao.insert(Supplier(args[0], args[1], args[2]))
             case "activities":
-                self._activities_dao.insert(Activitie(args[0], args[1], args[2], args[3]))
+                self._activities_dao.insert(Activitie(args[0], args[1], args[2], args[3]))  # never called
             case "branches":
                 self._branches_dao.insert(Branche(args[0], args[1], args[2]))
             case "products":
                 self._products_dao.insert(Product(args[0], args[1], args[2], args[3]))
             case _:
-                print("table ",table_name,"doesent exist")
+                print("table ", table_name, "doesn't exist")
+
+    def add_activity(self, args):
+        product_id = args[0]
+        quantity = args[1]
+        activator_id = args[2]
+        date = args[3]
+        rows = self.execute_command()
+
+    def print_tables(self):
+        print("Activities")
+        rows = self._activities_dao.find_all_ordered("date")
+        for row in rows:
+            print(row)
+
+        print("Branches")
+        rows = self._branches_dao.find_all_ordered("id")
+        for row in rows:
+            print(row)
+
+        print("Employees")
+        rows = self._employees_dao.find_all_ordered("id")
+        for row in rows:
+            print(row)
+
+        print("Products")
+        rows = self._products_dao.find_all_ordered("id")
+        for row in rows:
+            print(row)
+
+        print("Suppliers")
+        rows = self._suppliers_dao.find_all_ordered("id")
+        for row in rows:
+            print(row)
 
 
 # singleton

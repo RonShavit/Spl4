@@ -7,6 +7,7 @@ def main(args : list[str]):
     with open(inputfilename) as inputfile:
         for line in inputfile:
             splittedline : list[str] = line.strip().split(", ")
+            print(splittedline)
             #TODO: apply the action (and insert to the table) if possible
 
 if __name__ == '__main__':

@@ -3,11 +3,11 @@ import inspect
 
 def orm(cursor, dto_type):
     # the following line retrieve the argument names of the constructor
-    args : list[str] = list(inspect.signature(dto_type.__init__).parameters.keys())
+    args: list[str] = list(inspect.signature(dto_type.__init__).parameters.keys())
 
     # the first argument of the constructor will be 'self', it does not correspond
     # to any database field, so we can ignore it.
-    args : list[str] = args[1:]
+    args: list[str] = args[1:]
 
     # gets the names of the columns returned in the cursor
     col_names = [column[0] for column in cursor.description]
@@ -46,14 +46,14 @@ class Dao(object):
         c = self._conn.cursor()
         c.execute('SELECT * FROM {}'.format(self._table_name))
         return orm(c, self._dto_type)
-    
+
     def find(self, **keyvals):
         column_names = keyvals.keys()
         params = list(keyvals.values())
- 
+
         stmt = 'SELECT * FROM {} WHERE {}' \
-               .format(self._table_name, ' AND '.join([col + '=?' for col in column_names]))
- 
+            .format(self._table_name, ' AND '.join([col + '=?' for col in column_names]))
+
         c = self._conn.cursor()
         c.execute(stmt, params)
         return orm(c, self._dto_type)
@@ -61,8 +61,13 @@ class Dao(object):
     def delete(self, **keyvals):
         column_names = keyvals.keys()
         params = list(keyvals.values())
- 
+
         stmt = 'DELETE FROM {} WHERE {}' \
-               .format(self._table_name,' AND '.join([col + '=?' for col in column_names]))
- 
+            .format(self._table_name, ' AND '.join([col + '=?' for col in column_names]))
+
         self._conn.cursor().execute(stmt, params)
+
+    # returns all items in table ordered by order_by
+    def find_all_ordered(self, order_by):
+        stmt = "SELECT * FROM {} ORDER BY ?".format(self._table_name)
+        return self._conn.cursor().execute(stmt, [order_by]).fetchall()
