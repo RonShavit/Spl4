@@ -1,5 +1,7 @@
 import sqlite3
 import atexit
+
+import dbtools
 from dbtools import Dao
 
 
@@ -96,6 +98,9 @@ class Repository(object):
     def execute_command(self, script: str) -> list:
         return self._conn.cursor().execute(script).fetchall()
 
+    def execute_command_args(self, script: str, args: list) -> list:
+        return self._conn.cursor().execute(script, args).fetchall()
+
     def insert(self, table_name, args):
         match table_name:
             case "employees":
@@ -109,14 +114,32 @@ class Repository(object):
             case "products":
                 self._products_dao.insert(Product(args[0], args[1], args[2], args[3]))
             case _:
-                print("table ", table_name, "doesn't exist")
+                pass
 
     def add_activity(self, args):
         product_id = args[0]
         quantity = args[1]
         activator_id = args[2]
         date = args[3]
-        rows = self.execute_command()
+        if int(quantity) > 0:
+            self.supply_arrival(product_id, quantity, activator_id, date)
+        elif int(quantity) < 0:
+            self.sales_attempt(product_id, quantity, activator_id, date)
+
+    def supply_arrival(self, product_id, quantity, supplier_id, date):
+        prod = self._products_dao.find(id=product_id)
+        if prod:
+            new_quantity = str(int(prod[0].quantity) + int(quantity))
+            self.execute_command_args("UPDATE products SET quantity=? WHERE id=?", [new_quantity, product_id])
+            self.insert("activities", [product_id, quantity, supplier_id, date])
+
+    def sales_attempt(self, product_id, quantity, employee_id, date):
+        prod = self._products_dao.find(id=product_id)
+        if prod:
+            new_quantity = int(prod[0].quantity) + int(quantity)
+            if new_quantity >= 0:
+                self.execute_command_args("UPDATE products SET quantity=? WHERE id=?", [new_quantity, product_id])
+                self.insert("activities", [product_id, quantity, employee_id, date])
 
     def print_tables(self):
         print("Activities")
@@ -141,6 +164,40 @@ class Repository(object):
 
         print("Suppliers")
         rows = self._suppliers_dao.find_all_ordered("id")
+        for row in rows:
+            print(row)
+
+    def print_employees_report(self):
+        print('Employees report')
+        employees = self._employees_dao.find_all_ordered_ORM("name")
+        for employee in employees:
+            branche = self._branches_dao.find(id=employee.branche)[0].location
+            line = employee.name + " " + str(employee.salary) + " " + branche
+
+            activities_relevent = self._activities_dao.find(activator_id=employee.id)
+            tot_revenue = 0.0
+            for activity in activities_relevent:
+                quantity = -1 * int(activity.quantity)
+                product = self._products_dao.find(id=activity.product_id)
+                price = float(product[0].price)
+                revenue = quantity * price
+                tot_revenue += revenue
+
+            if (tot_revenue).is_integer():
+                line += " "+str(int(tot_revenue))
+            else:
+                line += " "+str(tot_revenue)
+
+            print(line)
+
+    def print_activities_report(self):
+        print("Activities report")
+        rows = self.execute_command("""
+        SELECT activities.date, products.description, activities.quantity, employees.name, suppliers.name
+          FROM activities JOIN
+           products ON activities.product_id=products.id LEFT JOIN
+           suppliers ON activities.activator_id=suppliers.id LEFT JOIN
+           employees ON activities.activator_id=employees.id""")
         for row in rows:
             print(row)
 

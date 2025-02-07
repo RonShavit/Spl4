@@ -69,5 +69,11 @@ class Dao(object):
 
     # returns all items in table ordered by order_by
     def find_all_ordered(self, order_by):
-        stmt = "SELECT * FROM {} ORDER BY ?".format(self._table_name)
-        return self._conn.cursor().execute(stmt, [order_by]).fetchall()
+        stmt = "SELECT * FROM {} ORDER BY {}".format(self._table_name, order_by)
+        return self._conn.cursor().execute(stmt).fetchall()
+
+    def find_all_ordered_ORM(self, order_by):
+        stmt = "SELECT * FROM {} ORDER BY {}".format(self._table_name,order_by)
+        c = self._conn.cursor()
+        c.execute(stmt)
+        return orm(c, self._dto_type)
